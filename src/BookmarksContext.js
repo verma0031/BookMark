@@ -29,17 +29,12 @@ const BookmarksProvider = ({ children }) => {
 			} catch (error) {
 				console.error("Error fetching bookmarks:", error);
 			} finally {
-				setLoading(false); // Set loading to false after fetching
+				setLoading(false);
 			}
 		};
 
-		fetchBookmarks(); // Fetch bookmarks when component mounts
-
-		// Cleanup function (optional)
-		return () => {
-			// Any cleanup logic if needed
-		};
-	}, []); // Dependency array ensures it runs once on mount
+		fetchBookmarks();
+	}, []);
 
 	const deleteBookmark = async (id) => {
 		try {
@@ -59,9 +54,36 @@ const BookmarksProvider = ({ children }) => {
 		}
 	};
 
+	const editBookmark = async (id, updatedBookmark) => {
+		try {
+			const response = await fetch(
+				`https://bookmark-keeper-default-rtdb.firebaseio.com/bookmarks/${id}.json`,
+				{
+					method: "PUT",
+					headers: {
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify(updatedBookmark),
+				}
+			);
+			if (response.ok) {
+				setBookmarks(
+					bookmarks.map((bookmark) =>
+						bookmark.id === id ? { id, ...updatedBookmark } : bookmark
+					)
+				);
+			} else {
+				throw new Error("Failed to edit bookmark");
+			}
+		} catch (error) {
+			console.error("Error editing bookmark:", error);
+		}
+	};
+
 	const contextValue = {
 		bookmarks,
 		deleteBookmark,
+		editBookmark,
 	};
 
 	if (loading) {

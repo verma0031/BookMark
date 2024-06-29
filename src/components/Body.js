@@ -1,51 +1,35 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useBookmarksContext } from "../BookmarksContext";
 
 const Body = () => {
-	// const { deleteBookmark } = useBookmarksContext();
-	const [bookmarks, setBookmarks] = useState([]);
-	const [loading, setLoading] = useState(true);
-
-	useEffect(() => {
-		const fetchBookmarks = async () => {
-			try {
-				const response = await fetch(
-					"https://bookmark-keeper-default-rtdb.firebaseio.com/bookmarks.json"
-				);
-				if (response.ok) {
-					const data = await response.json();
-					if (data) {
-						const bookmarksWithIds = Object.keys(data).map((key) => ({
-							id: key,
-							...data[key],
-						}));
-						setBookmarks(bookmarksWithIds);
-					}
-				} else {
-					throw new Error("Failed to fetch bookmarks");
-				}
-			} catch (error) {
-				console.error("Error fetching bookmarks:", error);
-			} finally {
-				setLoading(false); // Set loading to false after fetching
-			}
-		};
-
-		fetchBookmarks(); // Fetch bookmarks when component mounts
-
-		// Cleanup function (optional)
-		return () => {
-			// Any cleanup logic if needed
-		};
-	}, []); // Dependency array ensures it runs once on mount
+	const { bookmarks, deleteBookmark, editBookmark, addBookmark } =
+		useBookmarksContext();
+	const [editing, setEditing] = useState(null);
+	const [updatedTitle, setUpdatedTitle] = useState("");
+	const [updatedUrl, setUpdatedUrl] = useState("");
+	const [newTitle, setNewTitle] = useState("");
+	const [newUrl, setNewUrl] = useState("");
 
 	const handleDelete = (id) => {
 		deleteBookmark(id);
 	};
 
-	if (loading) {
-		return <div>Loading...</div>;
-	}
+	const handleEdit = (bookmark) => {
+		setEditing(bookmark.id);
+		setUpdatedTitle(bookmark.title);
+		setUpdatedUrl(bookmark.url);
+	};
+
+	const handleSave = (id) => {
+		editBookmark(id, { title: updatedTitle, url: updatedUrl });
+		setEditing(null);
+	};
+
+	const handleAdd = () => {
+		addBookmark({ title: newTitle, url: newUrl });
+		setNewTitle("");
+		setNewUrl("");
+	};
 
 	if (bookmarks.length === 0) {
 		return <div>No bookmarks available.</div>;
@@ -58,10 +42,39 @@ const Body = () => {
 				{bookmarks.map((bookmark) => (
 					<li key={bookmark.id} className="mb-2">
 						<div className="flex justify-between items-center">
-							<div>
-								<h3 className="text-lg font-semibold">{bookmark.title}</h3>
-								<p className="text-gray-600">{bookmark.url}</p>
-							</div>
+							{editing === bookmark.id ? (
+								<div>
+									<input
+										type="text"
+										value={updatedTitle}
+										onChange={(e) => setUpdatedTitle(e.target.value)}
+										className="mr-2 p-1 border rounded"
+									/>
+									<input
+										type="text"
+										value={updatedUrl}
+										onChange={(e) => setUpdatedUrl(e.target.value)}
+										className="mr-2 p-1 border rounded"
+									/>
+									<button
+										className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-md"
+										onClick={() => handleSave(bookmark.id)}
+									>
+										Save
+									</button>
+									<button
+										className="bg-gray-500 hover:bg-gray-600 text-white px-3 py-1 rounded-md ml-2"
+										onClick={() => setEditing(null)}
+									>
+										Cancel
+									</button>
+								</div>
+							) : (
+								<div>
+									<h3 className="text-lg font-semibold">{bookmark.title}</h3>
+									<p className="text-gray-600">{bookmark.url}</p>
+								</div>
+							)}
 							<div>
 								<button
 									className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-md"
@@ -69,7 +82,12 @@ const Body = () => {
 								>
 									Delete
 								</button>
-								{/* Add update functionality as needed */}
+								<button
+									className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-md ml-2"
+									onClick={() => handleEdit(bookmark)}
+								>
+									Edit
+								</button>
 							</div>
 						</div>
 					</li>
